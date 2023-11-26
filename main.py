@@ -3,10 +3,10 @@ import sys
 import os
 import logging
 import asyncio
-import csv
 
 # Third-party imports
 import aiohttp
+import pandas as pd
 
 # Change the event loop policy to WindowsSelectorEventLoopPolicy for Windows.
 # See README.md for more details
@@ -22,7 +22,7 @@ async def fetch_country_info(session, country):
     Asynchronously fetches data for a single country.
     Returns: a dictionary of country data.
     """
-    url = f'https://restcountries.com/v3.1/name/{country}?fullText=true'
+    url = f'https://restcountries.com/v3.1/name/{country}'
     try:
         async with session.get(url) as response:
             if response.status != 200:
@@ -47,36 +47,47 @@ async def get_countries_info(countries):
         return await asyncio.gather(*tasks)
 
 
-def write_to_csv(data):
-    """Writes countries data to CSV file."""
-    filename = 'countries_info.csv'
-    try:
-        with open(filename, 'w', newline='') as csvfile:
-            fieldnames = ['country_name', 'currency', 'capital', 'alt_spellings']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
+def extract_countries_info(data):
+    """
+    Extracts data from JSON object into Pandas DF.
+    Returns: a DataFrame containing country data: 'country_name', 'currency', 'capital', 'alt_spellings'
+    """
+    # Create an empty DataFrame in event that no data is returned
+    countries_df = pd.DataFrame(columns=['country_name', 'currency', 'capital', 'alt_spellings'])
+    country_df = pd.DataFrame(columns=['country_name', 'currency', 'capital', 'alt_spellings'])
 
-            for country_data in data:
-                writer.writerow({
-                    'country_name': country_data['name']['common'] 
-                        if 'name' in country_data else '',
-                    'currency': next(iter(country_data['currencies'].values()), {}).get('name', '') 
-                        if 'currencies' in country_data else '',
-                    'capital': country_data['capital'][0] 
-                        if 'capital' in country_data else '',
-                    'alt_spellings': ', '.join(country_data['altSpellings']) 
-                        if 'altSpellings' in country_data else ''
-                })
+    for country_data in data:
+        try:
+            country_name = country_data['name']['common'] if 'name' in country_data else ''
+            currency = next(iter(country_data['currencies'].values()), {}).get('name', '') if 'currencies' in country_data else ''
+            capital = country_data['capital'][0] if 'capital' in country_data else ''
+            alt_spellings = ', '.join(country_data['altSpellings']) if 'altSpellings' in country_data else ''
 
-        logging.info(f"Succesfully wrote to CSV: {filename}")
-    except Exception as e:
-        logging.error(f"Error writing to CSV: {e}")
+            # Create a DataFrame for the current country
+            country_df = pd.DataFrame([{
+                'country_name': country_name,
+                'currency': currency,
+                'capital': capital,
+                'alt_spellings': alt_spellings
+            }])
+        except Exception as e:
+            logging.error(f"Error extracting country from object: {e}")
+
+        # Concat the current country DataFrame to the countries DataFrame
+        countries_df = pd.concat([countries_df, country_df], ignore_index=True)
+
+    return countries_df.drop_duplicates()
 
 
 async def main():
-    countries = ['United States of America', 'Canada', 'Federal Republic of Germany']
+    countries = ['United States of America', 'Canada', 'Germany']
     countries_info = await get_countries_info(countries)
-    write_to_csv(countries_info)
+
+    countries_df = extract_countries_info(countries_info)
+    print(countries_df) # Print data to console as per requirement
+    countries_df.to_csv('countries_data.csv', index=False)
+
+    
 
 
 if __name__ == "__main__":
