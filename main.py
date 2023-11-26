@@ -41,7 +41,7 @@ async def get_countries_info(countries):
     Asynchronously fetches data for all countries in list.
     Returns: a list of country data dictionaries.
     """
-    logging.info(f"Fetched data for {countries}")
+    logging.info(f"Fetching data for {countries}")
     async with aiohttp.ClientSession() as session:
         tasks = [fetch_country_info(session, country) for country in countries]
         return await asyncio.gather(*tasks)
@@ -78,17 +78,24 @@ def extract_countries_info(data):
 
     return countries_df.drop_duplicates()
 
+def export_data(df):
+    """
+    Displays the dataframe in a print statement and exports to CSV
+    Returns: None
+    """
+    print(df) # Print data to console as per requirement
+    filename = 'countries_data.csv'
+    df.to_csv(filename, index=False)
+    logging.info(f"Creating CSV with the name: {filename}.")
 
 async def main():
     countries = ['United States of America', 'Canada', 'Germany']
     countries_info = await get_countries_info(countries)
 
     countries_df = extract_countries_info(countries_info)
-    print(countries_df) # Print data to console as per requirement
-    countries_df.to_csv('countries_data.csv', index=False)
+    export_data(countries_df)
+
 
     
-
-
 if __name__ == "__main__":
     asyncio.run(main())
