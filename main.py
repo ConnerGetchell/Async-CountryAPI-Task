@@ -44,58 +44,61 @@ async def get_countries_info(countries):
     logging.info(f"Fetching data for {countries}")
     async with aiohttp.ClientSession() as session:
         tasks = [fetch_country_info(session, country) for country in countries]
-        return await asyncio.gather(*tasks)
+        return await asyncio.gather(*tasks, return_exceptions=True)
 
 
-def extract_countries_info(data):
-    """
-    Extracts data from JSON object into Pandas DF.
-    Returns: a DataFrame containing country data: 'country_name', 'currency', 'capital', 'alt_spellings'
-    """
-    # Create an empty DataFrame in event that no data is returned
-    countries_df = pd.DataFrame(columns=['country_name', 'currency', 'capital', 'alt_spellings'])
-    country_df = pd.DataFrame(columns=['country_name', 'currency', 'capital', 'alt_spellings'])
+def extract_country_data(country_data):
+    '''
+    Extracts the country name, currency, capital, and alternative spellings from the country data object.
+    Returns: a dictionary of country data.
+    '''
+    try:
+        return {
+            'country_name': country_data['name']['common'] if 'name' in country_data else '',
+            'currency': next(iter(country_data['currencies'].values()), {}).get('name', '') if 'currencies' in country_data else '',
+            'capital': country_data['capital'][0] if 'capital' in country_data else '',
+            'alt_spellings': ', '.join(country_data['altSpellings']) if 'altSpellings' in country_data else ''
+        }
+    except Exception as e:
+        logging.error(f"Error extracting country from object: {e}")
+        return None
 
+def format_countries_info(data):
+    '''
+    Formats the country data dict into a dataframe.
+    Returns: a dataframe of country data.
+    '''
+    country_dicts = []
     for country_data in data:
-        try:
-            country_name = country_data['name']['common'] if 'name' in country_data else ''
-            currency = next(iter(country_data['currencies'].values()), {}).get('name', '') if 'currencies' in country_data else ''
-            capital = country_data['capital'][0] if 'capital' in country_data else ''
-            alt_spellings = ', '.join(country_data['altSpellings']) if 'altSpellings' in country_data else ''
-
-            # Create a DataFrame for the current country
-            country_df = pd.DataFrame([{
-                'country_name': country_name,
-                'currency': currency,
-                'capital': capital,
-                'alt_spellings': alt_spellings
-            }])
-        except Exception as e:
-            logging.error(f"Error extracting country from object: {e}")
-
-        # Concat the current country DataFrame to the countries DataFrame
-        countries_df = pd.concat([countries_df, country_df], ignore_index=True)
-
+        if country_data is not None and not isinstance(country_data, Exception):
+            country_dict = extract_country_data(country_data)
+            if country_dict is not None:
+                country_dicts.append(country_dict)
+    countries_df = pd.DataFrame(country_dicts)
     return countries_df.drop_duplicates()
+
 
 def export_data(df):
     """
     Displays the dataframe in a print statement and exports to CSV
     Returns: None
     """
-    print(df) # Print data to console as per requirement
+    print(df) # Display the dataframe to console for project requirements
     filename = 'countries_data.csv'
     df.to_csv(filename, index=False)
-    logging.info(f"Creating CSV with the name: {filename}.")
+    if os.path.exists(filename):
+        logging.info(f"Successfully created CSV with the name: {filename}.")
+    else:
+        logging.error(f"Failed to create CSV with the name: {filename}.")
+
 
 async def main():
     countries = ['United States of America', 'Canada', 'Germany']
     countries_info = await get_countries_info(countries)
 
-    countries_df = extract_countries_info(countries_info)
+    countries_df = format_countries_info(countries_info)
     export_data(countries_df)
 
-
-    
+  
 if __name__ == "__main__":
     asyncio.run(main())
