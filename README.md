@@ -1,6 +1,6 @@
 # Async-CountryAPI-Task:
 Conner Getchell
-11/23/23
+11/26/23
 
 A task to be completed for Altair Data job interview. 
 
@@ -18,7 +18,7 @@ venv.bak/ are included in this project repo!!
 2. Python version 3.9.7 
     * aiohttp is not yet compatible with 3.12.x
 
-3. I had to change to the WindowsSelectorEventLoopPolicy for Windows on this version of Python. The default was seemingly working,
+3. I had to change to the WindowsSelectorEventLoopPolicy for Windows on this version of Python for async methods. The default was seemingly working,
 but for each async function I was getting a RuntimeEror: Event loop is closed. This solution cleaned that up for Windows users.
 
 # Task at hand:
