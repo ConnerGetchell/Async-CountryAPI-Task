@@ -4,6 +4,14 @@ Conner Getchell
 
 A task to be completed for Altair Data job interview. 
 
+# How to Run:
+1. Pull down repo
+2. Terminal: Navigate to .\venv\Scripts
+3. Terminal: 'activate' to start virtual enviroment
+4. Terminal: Navigate back to root directory of project
+5. Terminal: 'pip install -r requirements.txt'
+6. Terminal: Finally, run the application with 'py main.py'
+
 # Notes:
 1. Normally I would git ignore the virtual enviroment, but for the sake of demonstration in this application I felt that I should include it:
     * Environments:
@@ -20,6 +28,8 @@ venv.bak/ are included in this project repo!!
 
 3. I had to change to the WindowsSelectorEventLoopPolicy for Windows on this version of Python for async methods. The default was seemingly working,
 but for each async function I was getting a RuntimeEror: Event loop is closed. This solution cleaned that up for Windows users.
+
+4. The script is called "main.py"
 
 # Task at hand:
 Objective: Create a Python script that asynchronously pulls data for three different countries from the
